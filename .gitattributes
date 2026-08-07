@@ -1,0 +1,9 @@
+# The dataset is consumed by scripts on every platform and diffed by a bot, so
+# line endings are decided here rather than by whoever's machine last touched
+# it. A CRLF slipping into dist/exercises.json would show up as "every line
+# changed" in a sync commit and hide the change that actually mattered.
+* text=auto eol=lf
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
