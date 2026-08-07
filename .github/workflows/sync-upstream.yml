@@ -25,6 +25,10 @@ on:
         description: 'Report only, change nothing'
         type: boolean
         default: false
+      upstream_repo:
+        description: 'Read a different upstream (leave blank for the real one)'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -44,10 +48,15 @@ jobs:
         with:
           python-version: '3.12'
 
+      # `upstream_repo` exists so the alarm can be drilled: dispatch this
+      # workflow against a repository that does not exist and watch it refuse,
+      # open the issue and fail, without waiting for a real disaster to find
+      # out whether any of that works.
       - name: Compare upstream against this mirror
         id: guard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_REPO: ${{ inputs.upstream_repo || 'yuhonas/free-exercise-db' }}
         run: |
           set +e
           python scripts/guarded_sync.py \
