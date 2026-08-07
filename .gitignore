@@ -1,0 +1,4 @@
+sync-report.md
+commit-message.txt
+*.part
+__pycache__/

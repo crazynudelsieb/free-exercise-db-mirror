@@ -1,0 +1,45 @@
+name: Tests
+
+# The guard is the only code here, and it is the thing standing between a bad
+# upstream release and the copy everything downstream reads. It gets tested.
+
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Guard tests
+        run: python -m unittest discover -s tests -v
+
+      # The dataset is the product. A mirror serving JSON that does not parse,
+      # or that lost its images, is a mirror nobody can use.
+      - name: The dataset is intact
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          records = json.loads(pathlib.Path('dist/exercises.json').read_text('utf-8'))
+          assert isinstance(records, list) and len(records) >= 700, len(records)
+          missing = [p for r in records for p in (r.get('images') or [])
+                     if not pathlib.Path('exercises', p).is_file()]
+          print(f'{len(records)} exercises, '
+                f'{sum(len(r.get("images") or []) for r in records)} image paths, '
+                f'{len(missing)} missing')
+          if missing:
+              print('missing:', missing[:10], file=sys.stderr)
+              sys.exit(1)
+          PY

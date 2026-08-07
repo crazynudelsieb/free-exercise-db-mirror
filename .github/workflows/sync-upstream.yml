@@ -1,0 +1,101 @@
+name: Sync from upstream (guarded)
+
+# Weekly, and on demand. The guard in scripts/guarded_sync.py decides whether
+# what upstream is offering is safe to apply; this file only carries the result
+# to a commit, a tag, or an issue.
+#
+# A scheduled workflow is disabled by GitHub after 60 days without repository
+# activity. An accepted sync counts as activity, so this keeps itself alive as
+# long as upstream keeps moving; if upstream goes quiet for two months the
+# schedule stops and the mirror simply stays as it is — which is the correct
+# failure mode for a backup.
+
+on:
+  schedule:
+    # Mondays, 04:17 UTC. Off the hour on purpose: every cron on GitHub fires
+    # at :00 and the queue there is long.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Apply even if the guard refuses (use after reading the report)'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Report only, change nothing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compare upstream against this mirror
+        id: guard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python scripts/guarded_sync.py \
+            ${{ inputs.force && '--force' || '' }} \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            --report-file sync-report.md
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
+        run: cat sync-report.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      # The whole point of the exercise: a refusal changes nothing and tells a
+      # human. One issue per refusal, titled by date so a repeat does not bury
+      # the first one.
+      - name: Raise the alarm
+        if: steps.guard.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create upstream-sync \
+            --color d73a4a --description "Automated upstream sync" 2>/dev/null || true
+          gh issue create \
+            --title "Upstream sync refused ($(date -u +%Y-%m-%d))" \
+            --body-file sync-report.md \
+            --label upstream-sync
+
+      - name: Fail the run so the refusal is visible
+        if: steps.guard.outputs.status != '0'
+        run: |
+          echo "The guard refused this sync; the mirror is unchanged." >&2
+          exit 1
+
+      - name: Commit and tag what was accepted
+        if: steps.guard.outputs.status == '0' && !inputs.dry_run
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Already current; nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The report is a build artifact, not mirror content.
+          { echo "Sync from upstream $(date -u +%Y-%m-%d)"; echo; \
+            grep '^\* ' sync-report.md; } > commit-message.txt
+          git add -A -- ':!sync-report.md' ':!commit-message.txt'
+          git commit -F commit-message.txt
+          # A tag per accepted state, so rolling back to any previous copy of
+          # the data is one checkout rather than an archaeology session.
+          git tag "upstream-$(date -u +%Y%m%d-%H%M)"
+          git push --follow-tags
