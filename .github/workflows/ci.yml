@@ -9,6 +9,9 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - '.github/workflows/**'
+      # An accepted sync touches only this, and it is exactly when the
+      # "is the dataset still whole?" check is worth running.
+      - 'dist/**'
   pull_request:
   workflow_dispatch:
 

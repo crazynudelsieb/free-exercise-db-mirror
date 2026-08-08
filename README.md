@@ -43,6 +43,13 @@ On a refusal, **nothing is written**: the mirror keeps serving exactly what it
 served yesterday, an issue is opened with the full report, and the workflow run
 fails so the owner is emailed. A refusal is never silent and never partial.
 
+Both paths have been drilled rather than assumed, which is why the history
+contains a few commits labelled `Drill:` — the copy here was deliberately
+damaged so the sync had something real to refuse and something real to repair.
+The refusal drill (run against a repository that does not exist) opened
+[#1](../../issues/1) and changed nothing; the repair drill found two genuine
+bugs in the accept path, which is the entire argument for drilling it.
+
 Thresholds live at the top of `scripts/guarded_sync.py` and can be overridden
 per run with `MAX_REMOVED_FRACTION`, `MAX_CHANGED_FRACTION` and
 `MIN_EXERCISE_COUNT`. If upstream genuinely did mean it, re-run the workflow
