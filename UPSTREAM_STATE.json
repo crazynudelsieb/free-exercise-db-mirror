@@ -3,12 +3,12 @@
   "upstream_branch": "main",
   "upstream_sha": "b0eed061e1c832b3ed815fbaa4b45b3cdc14df49",
   "upstream_committed_at": "2026-05-24T03:09:39Z",
-  "synced_at": "2026-08-08T07:53:52Z",
+  "synced_at": "2026-08-08T07:56:38Z",
   "exercise_count": 873,
   "image_count": 1746,
   "last_change": {
-    "added": 2,
-    "changed": 1,
+    "added": 1,
+    "changed": 0,
     "removed": 0,
     "images_retained_after_upstream_dropped_them": 0
   }
