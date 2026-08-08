@@ -108,5 +108,10 @@ jobs:
           git commit -F commit-message.txt
           # A tag per accepted state, so rolling back to any previous copy of
           # the data is one checkout rather than an archaeology session.
-          git tag "upstream-$(date -u +%Y%m%d-%H%M)"
+          #
+          # Annotated, not lightweight: `git push --follow-tags` carries only
+          # annotated tags, so a lightweight one is created locally, never
+          # pushed, and the rollback points quietly do not exist.
+          git tag -a "upstream-$(date -u +%Y%m%d-%H%M)" \
+            -F commit-message.txt
           git push --follow-tags
