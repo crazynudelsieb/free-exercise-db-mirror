@@ -65,9 +65,25 @@ counted in the report.
 
 ### Everything is recoverable anyway
 
-Every accepted sync is one commit and one tag (`upstream-YYYYMMDD-HHMM`), so
-any previous state of the data is a `git checkout` away, whatever upstream does
-afterwards.
+Every sync that actually changes the data is one commit and one annotated tag
+(`upstream-YYYYMMDD-HHMM`), so any previous state of the data is a
+`git checkout` away, whatever upstream does afterwards.
+
+### Reading the history
+
+Three kinds of entry, and they are meant to be told apart at a glance:
+
+| commit | meaning |
+|---|---|
+| `Sync from upstream …` | upstream moved, the change passed the guard, tagged |
+| `Upstream unchanged — copy verified …` | a heartbeat: checked, intact, nothing to do |
+| *(no commit, an open issue instead)* | the guard refused; the copy is untouched |
+
+The heartbeat is deliberate rather than noise. It records the date this copy was
+last checked and found whole — which is most of what you want from a backup —
+and it counts as repository activity, which is what stops GitHub disabling the
+weekly schedule after 60 quiet days. Upstream can go months without a commit;
+this mirror should not go months without looking.
 
 ## Layout
 
