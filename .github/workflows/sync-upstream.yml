@@ -99,19 +99,41 @@ jobs:
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Two different events wear the same diff otherwise.
+          #
+          # A run where upstream had not moved still writes UPSTREAM_STATE.json,
+          # and that heartbeat is deliberate: it records that the copy was
+          # checked and found intact on a date, and it counts as repository
+          # activity, which is what stops GitHub disabling a scheduled workflow
+          # after 60 quiet days — the exact failure that would leave this mirror
+          # silently not mirroring.
+          #
+          # But a heartbeat is not a state of the data, so it gets no tag. A
+          # rollback point per week, all of them holding identical bytes, makes
+          # the rollback points harder to use rather than easier.
+          if git status --porcelain -- dist exercises | grep -q .; then
+            DATA_CHANGED=yes
+          else
+            DATA_CHANGED=no
+          fi
+
           # The report and the message are build artifacts, and .gitignore
           # already keeps them out of the tree — naming them here as excluded
           # pathspecs as well made `git add` refuse the whole run.
-          { echo "Sync from upstream $(date -u +%Y-%m-%d)"; echo; \
-            grep '^\* ' sync-report.md; } > commit-message.txt
+          if [ "$DATA_CHANGED" = yes ]; then
+            SUBJECT="Sync from upstream $(date -u +%Y-%m-%d)"
+          else
+            SUBJECT="Upstream unchanged — copy verified $(date -u +%Y-%m-%d)"
+          fi
+          { echo "$SUBJECT"; echo; grep '^\* ' sync-report.md; } > commit-message.txt
           git add -A
           git commit -F commit-message.txt
-          # A tag per accepted state, so rolling back to any previous copy of
-          # the data is one checkout rather than an archaeology session.
-          #
+
           # Annotated, not lightweight: `git push --follow-tags` carries only
-          # annotated tags, so a lightweight one is created locally, never
+          # annotated tags, so a lightweight one is created on the runner, never
           # pushed, and the rollback points quietly do not exist.
-          git tag -a "upstream-$(date -u +%Y%m%d-%H%M)" \
-            -F commit-message.txt
+          if [ "$DATA_CHANGED" = yes ]; then
+            git tag -a "upstream-$(date -u +%Y%m%d-%H%M)" -F commit-message.txt
+          fi
           git push --follow-tags
