@@ -1,13 +1,13 @@
 {
   "upstream": "yuhonas/free-exercise-db",
   "upstream_branch": "main",
-  "upstream_sha": "b0eed061e1c832b3ed815fbaa4b45b3cdc14df49",
-  "upstream_committed_at": "2026-05-24T03:09:39Z",
-  "synced_at": "2026-08-24T04:32:15Z",
-  "exercise_count": 873,
+  "upstream_sha": "a859101d633a01c4a1a920d6a8ce41dabba0705f",
+  "upstream_committed_at": "2026-08-30T07:30:00Z",
+  "synced_at": "2026-08-31T04:34:03Z",
+  "exercise_count": 876,
   "image_count": 1746,
   "last_change": {
-    "added": 0,
+    "added": 3,
     "changed": 0,
     "removed": 0,
     "images_retained_after_upstream_dropped_them": 0
